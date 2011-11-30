@@ -1,0 +1,111 @@
+<?php
+/**
+* @file
+* Lets users add private annotations to nodes.
+*
+* Adds a text field when a node is displayed
+* so that authenticated users may make notes.
+*/
+
+/**
+* Implementation of hook_menu().
+*/
+
+function meta_tags_menu() {
+  $items['admin/config/meta_tags'] = array(
+    'title' => 'Meta tags',
+    'description' => 'Adjust Meta tags options.',
+    'position' => 'right',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  
+  $items['admin/config/meta_tags/settings'] = array(
+    'title' => 'Meta tag settings',
+    'description' => 'Set default meta information and select content types',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('meta_tags_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'meta_tags.admin.inc',
+  );
+  return $items;
+}
+
+
+/**
+ * the title needs to be set in a preprocess hook otherwise it's too late - Not sure about this but seems to work
+ */
+ 
+function meta_tags_preprocess_html(&$variables, $hook){
+	$nodeId = arg(1);
+
+	$titleNode = node_load($nodeId);
+	
+	if (isset($titleNode->meta_title['und'][0]['value'])) {
+		$node_meta_title = $titleNode->meta_title['und'][0]['value'];
+	} else {
+		$node_meta_title = variable_get('meta_tags_default_title');
+	}
+
+	$variables['head_title'] = $node_meta_title; 	
+	unset($titleNode->meta_title); 
+	return $variables;
+}
+
+/**
+* Implements hook_node_load()
+*/
+function meta_tags_node_load($nodes, $types) {
+	foreach ($nodes as $node) {	
+			
+		// If there is content for description set for the node then use it, otherwise fallback to the defaults
+		if (isset($node->meta_desc['und'][0]['value'])) {
+			$node_meta_desc = $node->meta_desc['und'][0]['value'];
+		} else {
+			$node_meta_desc = variable_get('meta_tags_default_desc');
+		}		
+		
+		// Keywords are added on to the end of the default keywords if they are set.		
+		$node_default_keywords = variable_get('meta_tags_default_keywords');
+		
+		if (isset($node->meta_keywords['und'][0]['value'])) {
+			$node_meta_keywords = $node->meta_keywords['und'][0]['value'];	
+			$node_default_keywords .= ', ' . $node_meta_keywords;
+		}	
+		
+		//drupal_set_message('Meta title node  - ' . $node->meta_desc['und'][0]['value'] . ', '.$node_meta_desc . ', '.$node_default_keywords, 'status');
+		
+		// Meta information is set up...		
+		$meta_description = array(
+			'#type' => 'html_tag',
+			'#tag' => 'meta',
+			'#attributes' => array(
+				'name' => 'description',
+				'content' =>  $node_meta_desc
+			)
+		);  
+		
+		// Meta information is set up...		
+		$meta_keywords = array(
+			'#type' => 'html_tag',
+			'#tag' => 'meta',
+			'#attributes' => array(
+				'name' => 'keywords',
+				'content' =>  $node_default_keywords
+			)
+		);  
+				
+		//... and then added to the header
+		drupal_add_html_head($meta_description, 'meta_description');
+		drupal_add_html_head($meta_keywords, 'meta_keywords');
+		
+		// The content	
+		//unset($node->meta_title);	
+		//unset($node->meta_desc);
+		//unset($node->meta_keywords);
+	}
+}

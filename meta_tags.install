@@ -1,0 +1,113 @@
+<?php
+
+/**
+* Implements hook_install()
+*/
+
+function meta_tags_install() {
+  // Check to see if the annotation field exists.
+  $field = field_info_field('meta_title');
+  // If the annotation field does not exist then create it.
+  if (empty($field)) {
+    $field = array(
+      'field_name' => 'meta_title',
+      'entity_types' => array('node'),
+      'translatable' => TRUE,
+	  'type' => 'text',
+
+    );
+    $field = field_create_field($field);
+  }
+  
+  // Check to see if the annotation field exists.
+  $field = field_info_field('meta_desc');
+  // If the annotation field does not exist then create it.
+  if (empty($field)) {
+    $field = array(
+      'field_name' => 'meta_desc',
+      'type' => 'text',
+      'entity_types' => array('node'),
+      'translatable' => TRUE,
+	  'widget' => array(
+		'type' => 'text_textarea_with_summary',
+		'settings' => array(
+		  'rows' => 10,
+		  'summary_rows' => 3,
+		),
+
+	  ),
+    );
+    $field = field_create_field($field);
+  }
+  
+  // Check to see if the annotation field exists.
+  $field = field_info_field('meta_keywords');
+  // If the annotation field does not exist then create it.
+  if (empty($field)) {
+    $field = array(
+      'field_name' => 'meta_keywords',
+      'type' => 'text',
+      'entity_types' => array('node'),
+      'translatable' => TRUE,
+	  'widget' => array(
+		'type' => 'text_textarea_with_summary',
+		'settings' => array(
+		  'rows' => 10,
+		  'summary_rows' => 3,
+		),
+	  ),	  
+    );
+    $field = field_create_field($field);
+  }
+  
+  drupal_set_message('Module installed');
+}
+
+/**
+* Implements hook_uninstall()
+*/
+function meta_tags_uninstall() {
+  watchdog("Meta tags Module", "Uninstalling module and deleting fields");
+  $types = node_type_get_types();
+  foreach($types as $type) {
+    meta_tags_delete_meta_tags($type);
+  }
+  $field = field_info_field('meta_title');
+  if ($field) {
+    field_delete_field('meta_title');
+  }
+  
+  $field = field_info_field('meta_desc');
+  if ($field) {
+    field_delete_field('meta_desc');
+  }
+  
+  $field = field_info_field('meta_keywords');
+  if ($field) {
+    field_delete_field('meta_keywords');
+  }
+
+  	variable_del('meta_tags_default_keywords');
+	variable_del('meta_tags_default_desc');
+	variable_del('meta_tags_default_title');
+	variable_del('meta_tags_node_types');
+
+	cache_clear_all('variables', 'cache');
+}
+
+function meta_tags_delete_meta_tags($type) {
+  $instance = field_info_instance('node', 'meta_title', $type->type);
+  if ($instance) {
+    field_delete_instance($instance, false);
+  }
+  
+  $instance = field_info_instance('node', 'meta_desc', $type->type);
+  if ($instance) {
+    field_delete_instance($instance, false);
+  }
+  
+  $instance = field_info_instance('node', 'meta_keywords', $type->type);
+  if ($instance) {
+    field_delete_instance($instance, false);
+  }
+}

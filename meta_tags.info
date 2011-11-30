@@ -1,0 +1,7 @@
+name = Meta tags
+description = "Allows users to add meta tags (key words and description) to certain content types."
+package = Mark Design
+core = 7.x
+files[] = meta_tags.module
+files[] = meta_tags.install
+configure=admin/config/meta_tags/settings
